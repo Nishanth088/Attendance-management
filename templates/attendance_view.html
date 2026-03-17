@@ -1,0 +1,18 @@
+<table class="table table-bordered">
+
+<tr>
+<th>Subject</th>
+<th>Date</th>
+<th>Time</th>
+</tr>
+
+{% for row in data %}
+
+<tr>
+<td>{{row.Subject}}</td>
+<td>{{row.Date}}</td>
+<td>{{row.Time}}</td>
+</tr>
+{% endfor %}
+
+</table>

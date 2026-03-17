@@ -1,22 +1,61 @@
 import cv2
-import csv
 import os
-
-# Load face detector
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades +
-                                     "haarcascade_frontalface_default.xml")
-
-# Load eye detector
-eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades +
-                                    "haarcascade_eye.xml")
+import pandas as pd
 
 
-def register_student(name, roll):
+def capture_face(name, roll):
+
+    dataset_path = "dataset"
+
+    # create dataset folder
+    if not os.path.exists(dataset_path):
+        os.makedirs(dataset_path)
+
+    student_folder = os.path.join(dataset_path, str(roll))
+
+    if not os.path.exists(student_folder):
+        os.makedirs(student_folder)
+
+    # ----------------------------
+    # SAVE STUDENT DETAILS
+    # ----------------------------
+
+    if not os.path.exists("students.csv"):
+
+        df = pd.DataFrame(columns=["Name","Roll"])
+        df.to_csv("students.csv", index=False)
+
+    df = pd.read_csv("students.csv")
+
+    # check duplicate roll
+    if roll in df["Roll"].astype(str).values:
+        print("Student already exists")
+    else:
+
+        new_student = {
+            "Name": name,
+            "Roll": roll
+        }
+
+        df = pd.concat([df, pd.DataFrame([new_student])], ignore_index=True)
+
+        df.to_csv("students.csv", index=False)
+
+        print("Student saved to CSV")
+
+
+    # ----------------------------
+    # START CAMERA
+    # ----------------------------
 
     cap = cv2.VideoCapture(0)
 
-    eyes_closed = False
-    blink_detected = False
+    cap.set(3,640)
+    cap.set(4,480)
+
+    count = 0
+
+    print("Starting face capture...")
 
     while True:
 
@@ -25,70 +64,31 @@ def register_student(name, roll):
         if not ret:
             break
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        count += 1
 
-        faces = face_cascade.detectMultiScale(gray,1.3,5)
+        img_path = os.path.join(student_folder, f"{count}.jpg")
 
-        for (x,y,w,h) in faces:
+        cv2.imwrite(img_path, frame)
 
-            # Green rectangle on face
-            cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+        cv2.putText(
+            frame,
+            f"Capturing {count}/30",
+            (20,40),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0,255,0),
+            2
+        )
 
-            roi_gray = gray[y:y+h, x:x+w]
-            roi_color = frame[y:y+h, x:x+w]
+        cv2.imshow("Register Face", frame)
 
-            eyes = eye_cascade.detectMultiScale(roi_gray,1.1,4)
-
-            # Blue rectangle on eyes
-            for (ex,ey,ew,eh) in eyes:
-                cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(255,0,0),2)
-
-            # Blink detection
-            if len(eyes) == 0:
-                eyes_closed = True
-
-            if eyes_closed and len(eyes) > 0:
-                blink_detected = True
-
-        if blink_detected:
-            cv2.putText(frame,"Blink detected - Press C to capture",
-                        (20,40),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.7,
-                        (0,255,0),
-                        2)
-        else:
-            cv2.putText(frame,"Please blink to verify",
-                        (20,40),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.7,
-                        (0,0,255),
-                        2)
-
-        cv2.imshow("Register Student",frame)
-
-        key = cv2.waitKey(1)
-
-        if key == ord('c') and blink_detected:
-
-            if not os.path.exists("dataset"):
-                os.makedirs("dataset")
-
-            # save image
-            path = f"dataset/{roll}_{name}.jpg"
-            cv2.imwrite(path,frame)
-
-            # save student details
-            with open("students.csv","a",newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([roll,name])
-
-            print("Student Registered")
-
+        if count >= 30:
             break
 
-        if key == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
+
+    print("Face capture completed")
