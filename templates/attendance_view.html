@@ -1,18 +1,78 @@
-<table class="table table-bordered">
+<!DOCTYPE html>
 
+<html>
+<head>
+<title>Attendance Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-5">
+
+<div class="card p-4 shadow">
+
+<h2 class="text-center mb-4">📊 Student Attendance Dashboard</h2>
+
+<p><b>Name:</b> {{name}}</p>
+<p><b>Roll:</b> {{roll}}</p>
+
+<p><b>Total Attendance:</b> {{data|length}}</p>
+<p><b>Attendance Percentage:</b> {{ ((data|length / 30) * 100) | round(2) }}%</p>
+
+<table class="table table-bordered text-center">
+
+<thead class="table-dark">
 <tr>
+<th>#</th>
 <th>Subject</th>
 <th>Date</th>
 <th>Time</th>
 </tr>
+</thead>
 
+<tbody>
 {% for row in data %}
-
 <tr>
+<td>{{loop.index}}</td>
 <td>{{row.Subject}}</td>
 <td>{{row.Date}}</td>
 <td>{{row.Time}}</td>
 </tr>
 {% endfor %}
+</tbody>
 
 </table>
+
+<h4 class="mt-4 text-center">📊 Subject-wise Attendance</h4>
+
+<table class="table table-bordered text-center">
+
+<thead class="table-dark">
+<tr>
+<th>Subject</th>
+<th>Classes</th>
+<th>Percentage</th>
+</tr>
+</thead>
+
+<tbody>
+{% for subject, count in subject_count.items() %}
+<tr>
+<td>{{subject}}</td>
+<td>{{count}}</td>
+<td>{{ ((count / 30) * 100) | round(2) }}%</td>
+</tr>
+{% endfor %}
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</body>
+</html>

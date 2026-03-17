@@ -27,16 +27,13 @@ def register():
     return render_template("register.html")
 
 
-# ---------------- SUBJECT SELECTION ----------------
+# ---------------- SUBJECT + ATTENDANCE ----------------
 @app.route("/attendance", methods=["GET","POST"])
 def attendance():
 
     if request.method == "POST":
-
         subject = request.form["subject"]
-
         take_attendance(subject)
-
         return "Attendance Completed"
 
     return render_template("subject.html")
@@ -70,11 +67,15 @@ def verify():
 
         data = student.to_dict(orient="records")
 
+        # 🔥 SUBJECT-WISE COUNT
+        subject_count = student.groupby("Subject").size().to_dict()
+
         return render_template(
             "attendance_view.html",
             name=name,
             roll=roll,
-            data=data
+            data=data,
+            subject_count=subject_count
         )
 
     return "Face not matched"
