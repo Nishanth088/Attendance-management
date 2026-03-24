@@ -28,7 +28,7 @@ A secure and modern attendance management system that uses **face recognition te
 - **HTML, CSS, JavaScript**
 - **Bootstrap (for UI)**
 
----
+---## 📂 Project Structure
 Attendance-management/
 │
 ├── dataset/ # Stored face images (ignored in Git)
@@ -90,4 +90,4 @@ GitHub: https://github.com/Nishanth088
 
 If you like this project, give it a ⭐ on GitHub!
 
-## 📂 Project Structure
+
