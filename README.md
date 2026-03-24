@@ -32,13 +32,21 @@ A secure and modern attendance management system that uses **face recognition te
 
 Attendance-management/
 │
+
 ├── dataset/ # Stored face images (ignored in Git)
+
 ├── static/ # CSS, JS, assets
+
 ├── templates/ # HTML files
+
 ├── camera.py # Camera handling
+
 ├── app.py # Main Flask app
+
 ├── attendance.csv # Attendance records
+
 ├── requirements.txt # Dependencies
+
 └── README.md # Project documentation
 
 
