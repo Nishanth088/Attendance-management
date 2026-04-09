@@ -19,76 +19,83 @@ def capture_face(name, roll):
     # ----------------------------
     # SAVE STUDENT DETAILS
     # ----------------------------
-
     if not os.path.exists("students.csv"):
-
-        df = pd.DataFrame(columns=["Name","Roll"])
+        df = pd.DataFrame(columns=["Name", "Roll"])
         df.to_csv("students.csv", index=False)
 
     df = pd.read_csv("students.csv")
 
-    # check duplicate roll
+    # prevent duplicate roll
     if roll in df["Roll"].astype(str).values:
         print("Student already exists")
-    else:
+        return False
 
-        new_student = {
-            "Name": name,
-            "Roll": roll
-        }
+    new_student = {
+        "Name": name,
+        "Roll": roll
+    }
 
-        df = pd.concat([df, pd.DataFrame([new_student])], ignore_index=True)
-
-        df.to_csv("students.csv", index=False)
-
-        print("Student saved to CSV")
-
+    df = pd.concat([df, pd.DataFrame([new_student])], ignore_index=True)
+    df.to_csv("students.csv", index=False)
 
     # ----------------------------
     # START CAMERA
     # ----------------------------
-
     cap = cv2.VideoCapture(0)
-
-    cap.set(3,640)
-    cap.set(4,480)
+    cap.set(3, 640)
+    cap.set(4, 480)
 
     count = 0
-
-    print("Starting face capture...")
+    capturing = False
 
     while True:
 
         ret, frame = cap.read()
-
         if not ret:
             break
 
-        count += 1
-
-        img_path = os.path.join(student_folder, f"{count}.jpg")
-
-        cv2.imwrite(img_path, frame)
-
-        cv2.putText(
-            frame,
-            f"Capturing {count}/30",
-            (20,40),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0,255,0),
-            2
-        )
+        if not capturing:
+            cv2.putText(frame, "Press C to Start Capture", (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+        else:
+            cv2.putText(frame, f"Capturing {count}/30", (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
         cv2.imshow("Register Face", frame)
 
-        if count >= 30:
-            break
+        key = cv2.waitKey(1)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # START CAPTURE
+        if key == ord('c') and not capturing:
+            capturing = True
+
+        # AUTO CAPTURE
+        if capturing:
+            count += 1
+
+            img_path = os.path.join(student_folder, f"{count}.jpg")
+            cv2.imwrite(img_path, frame)
+
+            cv2.waitKey(100)
+
+            if count >= 30:
+                cap.release()
+                cv2.destroyAllWindows()
+                return True   # SUCCESS
+
+        # CANCEL
+        if key == ord('q'):
+            cap.release()
+            cv2.destroyAllWindows()
+
+            # 🔥 REMOVE PARTIAL DATA
+            if os.path.exists(student_folder):
+                for file in os.listdir(student_folder):
+                    os.remove(os.path.join(student_folder, file))
+                os.rmdir(student_folder)
+
+            return False  # CANCELLED
 
     cap.release()
     cv2.destroyAllWindows()
-
-    print("Face capture completed")
+    return False
