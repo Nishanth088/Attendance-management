@@ -1,32 +1,34 @@
 import cv2
 
-# load eye detector
 eye_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_eye.xml"
 )
 
 eyes_closed_frames = 0
 blink_detected = False
+blink_cooldown = 0
 
 
 def detect_blink(frame):
-
-    global eyes_closed_frames
-    global blink_detected
+    global eyes_closed_frames, blink_detected, blink_cooldown
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    eyes = eye_cascade.detectMultiScale(gray, 1.1, 5)
 
-    eyes = eye_cascade.detectMultiScale(gray, 1.1, 4)
+    # cooldown to avoid multiple triggers
+    if blink_cooldown > 0:
+        blink_cooldown -= 1
+        return False
 
-    # if no eyes detected → eyes closed
+    # eyes closed
     if len(eyes) == 0:
         eyes_closed_frames += 1
 
     else:
-
-        # if eyes reopen after being closed
-        if eyes_closed_frames > 3:
+        # blink detected (closed → open)
+        if eyes_closed_frames > 2:
             blink_detected = True
+            blink_cooldown = 15   # prevent repeated detection
 
         eyes_closed_frames = 0
 

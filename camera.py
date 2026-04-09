@@ -10,10 +10,10 @@ face_cascade = cv2.CascadeClassifier(
 )
 
 def beep_success():
-    winsound.Beep(1500,300)
+    winsound.Beep(1500, 300)
 
 def beep_fail():
-    winsound.Beep(500,500)
+    winsound.Beep(500, 500)
 
 
 def take_attendance(subject):
@@ -26,14 +26,18 @@ def take_attendance(subject):
     students = pd.read_csv("students.csv")
 
     cap = cv2.VideoCapture(0)
-    cap.set(3,480)
-    cap.set(4,360)
+    cap.set(3,640)
+    cap.set(4,480)
 
     recognized_roll = None
     recognized_name = None
 
     stable_frames = 0
     frame_count = 0
+
+    # 🔥 LIVENESS (HEAD MOVEMENT)
+    initial_x = None
+    challenge_done = False
 
     while True:
 
@@ -49,10 +53,21 @@ def take_attendance(subject):
 
         for (x,y,w,h) in faces:
 
+            # 🔥 HEAD MOVEMENT CHECK
+            center_x = x + w // 2
+
+            if initial_x is None:
+                initial_x = center_x
+
+            if abs(center_x - initial_x) > 40:
+                challenge_done = True
+
             face_img = frame[y:y+h, x:x+w]
             small_face = cv2.resize(face_img, (160,160))
 
-            if frame_count % 5 == 0:
+            # 🔥 ONLY AFTER MOVEMENT → RECOGNITION
+            if frame_count % 5 == 0 and challenge_done:
+
                 try:
                     result = DeepFace.find(
                         img_path=small_face,
@@ -62,9 +77,12 @@ def take_attendance(subject):
                     )
 
                     if len(result[0]) > 0:
+
                         best = result[0].iloc[0]
 
+                        # ✅ MATCH CHECK
                         if best["distance"] < 0.55:
+
                             identity = best["identity"]
                             roll = os.path.basename(os.path.dirname(identity))
 
@@ -74,34 +92,53 @@ def take_attendance(subject):
 
                             recognized_roll = roll
                             recognized_name = name
+
                         else:
+                            # ❌ NOT MATCH
                             recognized_roll = None
                             recognized_name = None
 
-                except:
-                    pass
+                    else:
+                        # ❌ NO RESULT
+                        recognized_roll = None
+                        recognized_name = None
 
+                except:
+                    recognized_roll = None
+                    recognized_name = None
+
+            # 🔥 STABLE DETECTION
             if recognized_roll:
                 stable_frames += 1
             else:
                 stable_frames = 0
 
+            # 🔥 LABEL DISPLAY
             label = "Unknown"
             color = (0,0,255)
 
             if recognized_roll:
                 label = f"{recognized_name} ({recognized_roll})"
                 color = (0,255,0)
+            else:
+                cv2.putText(frame, "Face Not Registered", (20,120),
+                            cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,0,255),2)
 
             cv2.rectangle(frame,(x,y),(x+w,y+h),color,2)
             cv2.putText(frame,label,(x,y-10),
                         cv2.FONT_HERSHEY_SIMPLEX,0.8,color,2)
 
-        if stable_frames < 15:
-            cv2.putText(frame,"Hold Still...",(20,80),
+        # 🔥 UI TEXT
+        if not challenge_done:
+            cv2.putText(frame,"Turn your head LEFT or RIGHT",(20,70),
+                        cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,0,255),2)
+
+        elif stable_frames < 10:
+            cv2.putText(frame,"Hold Still...",(20,70),
                         cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,255,255),2)
+
         else:
-            cv2.putText(frame,"Press C to Capture",(20,80),
+            cv2.putText(frame,"Press C to Capture",(20,70),
                         cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,255,0),2)
 
         cv2.putText(frame,f"Time: {current_time}",(20,40),
@@ -111,7 +148,8 @@ def take_attendance(subject):
 
         key = cv2.waitKey(1)
 
-        if key == ord('c') and stable_frames >= 15:
+        # 🔥 FINAL ATTENDANCE CONDITION
+        if key == ord('c') and stable_frames >= 10 and challenge_done:
 
             if recognized_roll:
 
